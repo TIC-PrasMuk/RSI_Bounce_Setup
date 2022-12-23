@@ -16,7 +16,7 @@ currentRSI15 = 0.0
 currentRSI5 = 0.0
 
 def startRSICalculation():
-
+    print("ToDo: RSI Calculation")
     return
 
 def roundtick(x) -> float:
