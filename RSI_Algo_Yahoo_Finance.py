@@ -8,6 +8,7 @@ import talib as ta
 
 #indexsymbol = "^DJI"
 indexsymbol = "^NSEBANK"
+#indexsymbol = "^NSEI"
 stop_LTP_threads = False
 currentRSI = 0.0
 currentRSI60 = 0.0
@@ -15,7 +16,7 @@ currentRSI15 = 0.0
 currentRSI5 = 0.0
 
 def startRSICalculation():
-
+    print("ToDo: RSI Calculation")
     return
 
 def roundtick(x) -> float:
@@ -55,6 +56,14 @@ def getLTP():
 
     global fTarget
     global fSL
+    global lbl_RSI_Msg
+
+    rsi_5Min_below40 = False
+    rsi_5Min_crossed40 = False
+    OrderPlace = False
+    entry = 0.0
+    target = 0.0
+    stoploss = 0.0
 
     global stop_LTP_threads
 
@@ -65,8 +74,8 @@ def getLTP():
             ltpsymbol = txt_NOption.get()
 
             try:
-                price1Min = yf.download(tickers=indexsymbol, period='1d', interval='1m')
-                #print(optionltp.iloc[-1]['Close'])
+                price1Min = yf.download(tickers=indexsymbol, period='1d', interval='1m', progress=False, rounding=True)
+                #print(price1Min.iloc[-1]['Close'])
                 ltp = roundtick(price1Min.iloc[-1]['Close'])
                 rsi1all = ta.RSI(price1Min['Close'])
                 currentRSI_l = roundtick(rsi1all.iloc[-1])
@@ -76,28 +85,17 @@ def getLTP():
                 txt_LTP.delete(0, END)
                 txt_LTP.insert(0, str(ltp))
 
-                price1Hr = yf.download(tickers=indexsymbol, period='5d', interval='1h')
+                price1Hr = yf.download(tickers=indexsymbol, period='5d', interval='1h', progress=False, rounding=True)
                 rsi1Hrall = ta.RSI(price1Hr['Close'])
                 currentRSI60_l = roundtick(rsi1Hrall.iloc[-1])
 
-                price15min = yf.download(tickers=indexsymbol, period='2d', interval='15m')
+                price15min = yf.download(tickers=indexsymbol, period='2d', interval='15m', progress=False, rounding=True)
                 rsi15Minall = ta.RSI(price15min['Close'])
                 currentRSI15_l = roundtick(rsi15Minall.iloc[-1])
 
-                price5Min = yf.download(tickers=indexsymbol, period='2d', interval='5m')
+                price5Min = yf.download(tickers=indexsymbol, period='2d', interval='5m', progress=False, rounding=True)
                 rsi5Minall = ta.RSI(price5Min['Close'])
                 currentRSI5_l = roundtick(rsi5Minall.iloc[-1])
-
-                if price5Min['open'].iloc[-1] >= price5Min['close'].iloc[-2]:
-                    print("Current open is high than last close", "Close = ",price5Min['close'].iloc[-2], "Open = ", price5Min['open'].iloc[-1] )
-
-
-                lock.acquire()
-                currentRSI = currentRSI_l
-                currentRSI60 = currentRSI60_l
-                currentRSI15 = currentRSI15_l
-                currentRSI5 = currentRSI5_l
-                lock.release()
 
                 txt_RSI60.delete(0, END)
                 txt_RSI60.insert(0, str(currentRSI60_l))
@@ -108,19 +106,64 @@ def getLTP():
                 txt_RSI1.delete(0, END)
                 txt_RSI1.insert(0, str(currentRSI_l))
 
+                if OrderPlace == False:
+                    if rsi_5Min_crossed40 == False:
+                        if currentRSI5_l < 40:
+                            rsi_5Min_below40 = True
+                            lbl_RSI_Msg.config(text="5 Min RSI is below 40")
+                            continue
+
+                        if rsi_5Min_below40:
+                            if currentRSI5_l > 40:
+                                rsi_5Min_crossed40 = True
+                                lbl_RSI_Msg.config(text=" Min RSI crossed 40")
+
+                    if rsi_5Min_crossed40:
+                        if price5Min['Open'].iloc[-1] >= price5Min['Close'].iloc[-2]:
+                            print("Current open is high than last close", "Close = ",price5Min['Close'].iloc[-2], "Open = ", price5Min['Open'].iloc[-1] )
+                            print("Open Candle: ", price5Min.index[-1], "Close Candle: ", price5Min.index[-2])
+                            entry = price5Min['Open'].iloc[-1]
+                            target = price5Min['Open'].iloc[-1] + 10
+                            stoploss = price5Min['Low'].iloc[-2]
+                            OrderPlace = True
+                            print("Order @ = ",entry, "Target = ", target, "Stoploss = ", stoploss )
+                            lbl_RSI_Msg.config(text="Order placed")
+                else:
+                    # check for Target or SL
+                    if OrderPlace:
+                        if price5Min['Close'].iloc[-1] >= target:
+                            print("Exit order as Target Hit")
+                            OrderPlace = False
+                            rsi_5Min_crossed40 = False
+                            rsi_5Min_below40 = False
+                            lbl_RSI_Msg.config(text="Target Hit")
+                            print("Exit @ = ", price5Min['Close'].iloc[-1])
+                            entry = 0.0
+                            target = 0.0
+                            stoploss = 0.0
+
+                        if price5Min['Close'].iloc[-1] < stoploss:
+                            print("Exit order as Stoploss Hit")
+                            OrderPlace = False
+                            rsi_5Min_crossed40 = False
+                            rsi_5Min_below40 = False
+                            lbl_RSI_Msg.config(text="Stoploss hit")
+                            print("Stoploss Exit @ = ", price5Min['Close'].iloc[-1])
+                            entry = 0.0
+                            target = 0.0
+                            stoploss = 0.0
+
+                lock.acquire()
+                currentRSI = currentRSI_l
+                currentRSI60 = currentRSI60_l
+                currentRSI15 = currentRSI15_l
+                currentRSI5 = currentRSI5_l
+                lock.release()
+
+
             except Exception as e:
                 txt_LTP.delete(0, END)
                 print('7 Exception Occurred in LTP order = ', e)
-
-            # if fTarget > 0.0:
-            #     if ltp >= fTarget:
-            #         print("Target Hit place exit orders")
-            #         fTarget = 0.0
-            #
-            # if fSL > 0.0:
-            #     if ltp <= fSL:
-            #         print("Stop loss hit")
-            #         fSL = 0.0
 
         except Exception as e:
             txt_LTP.delete(0, END)
@@ -177,9 +220,9 @@ def startthreading():
     t1.daemon = True
     t1.start()
 
-    t2 = threading.Thread(target=findSetup)
-    t2.daemon = True
-    t2.start()
+    # t2 = threading.Thread(target=findSetup)
+    # t2.daemon = True
+    # t2.start()
 
     # t1.join()
     # t2.join()
