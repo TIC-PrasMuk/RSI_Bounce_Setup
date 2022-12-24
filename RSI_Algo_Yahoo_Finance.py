@@ -2,13 +2,13 @@ from tkinter import *
 import threading
 import time
 from datetime import datetime
-from datetime import date
+#from datetime import date
 import yfinance as yf
 import talib as ta
 
 #indexsymbol = "^DJI"
-indexsymbol = "^NSEBANK"
-#indexsymbol = "^NSEI"
+#indexsymbol = "^NSEBANK"
+indexsymbol = "^NSEI"
 stop_LTP_threads = False
 currentRSI = 0.0
 currentRSI60 = 0.0
