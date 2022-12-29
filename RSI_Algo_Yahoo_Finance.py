@@ -2,7 +2,7 @@ from tkinter import *
 import threading
 import time
 from datetime import datetime
-from datetime import date
+#from datetime import date
 import yfinance as yf
 import talib as ta
 
@@ -74,7 +74,7 @@ def getLTP():
             ltpsymbol = txt_NOption.get()
 
             try:
-                price1Min = yf.download(tickers=indexsymbol, period='1d', interval='1m', progress=False, rounding=True)
+                price1Min = yf.download(tickers=indexsymbol, period='5d', interval='1m', progress=False, rounding=True)
                 #print(price1Min.iloc[-1]['Close'])
                 ltp = roundtick(price1Min.iloc[-1]['Close'])
                 rsi1all = ta.RSI(price1Min['Close'])
