@@ -5,6 +5,7 @@
 - H OM
 - OS is required i.e. Price between 20 and 50
 - **Entry:** When current Candle opens above previous close (Previous Candle is green)
+  Red candle then Green candle. If next candle opens above previous green candle's close then buy
 
 ## Over spill
 - MA between 20 & 50
