@@ -1,6 +1,6 @@
 # Module
 - yfinance
-- talib
+- talib (TA-Lib)
 
 
 # To install yfinance in PyCharm:
