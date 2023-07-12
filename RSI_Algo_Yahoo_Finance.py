@@ -6,8 +6,8 @@ from datetime import datetime
 import yfinance as yf
 import talib as ta
 
-#indexsymbol = "^DJI"
-indexsymbol = "^NSEBANK"
+indexsymbol = "^DJI"
+#indexsymbol = "^NSEBANK"
 #indexsymbol = "^NSEI"
 stop_LTP_threads = False
 currentRSI = 0.0
@@ -77,6 +77,8 @@ def getLTP():
                 price1Min = yf.download(tickers=indexsymbol, period='5d', interval='1m', progress=False, rounding=True)
                 #print(price1Min.iloc[-1]['Close'])
                 ltp = roundtick(price1Min.iloc[-1]['Close'])
+                #print(type(price1Min['Close']))
+                #print(price1Min['Close'])
                 rsi1all = ta.RSI(price1Min['Close'])
                 currentRSI_l = roundtick(rsi1all.iloc[-1])
 
@@ -84,6 +86,8 @@ def getLTP():
 
                 txt_LTP.delete(0, END)
                 txt_LTP.insert(0, str(ltp))
+
+                st = time.time()
 
                 price1Hr = yf.download(tickers=indexsymbol, period='5d', interval='1h', progress=False, rounding=True)
                 rsi1Hrall = ta.RSI(price1Hr['Close'])
@@ -96,6 +100,11 @@ def getLTP():
                 price5Min = yf.download(tickers=indexsymbol, period='2d', interval='5m', progress=False, rounding=True)
                 rsi5Minall = ta.RSI(price5Min['Close'])
                 currentRSI5_l = roundtick(rsi5Minall.iloc[-1])
+
+                et = time.time()
+
+                elapsed_time = et - st
+                print('Execution time price1Hr:', (elapsed_time * 1000), 'miliseconds')
 
                 txt_RSI60.delete(0, END)
                 txt_RSI60.insert(0, str(currentRSI60_l))
@@ -116,7 +125,7 @@ def getLTP():
                         if rsi_5Min_below40:
                             if currentRSI5_l > 40:
                                 rsi_5Min_crossed40 = True
-                                lbl_RSI_Msg.config(text=" Min RSI crossed 40")
+                                lbl_RSI_Msg.config(text="5 Min RSI crossed 40")
 
                     if rsi_5Min_crossed40:
                         if price5Min['Open'].iloc[-1] >= price5Min['Close'].iloc[-2]:
@@ -137,7 +146,7 @@ def getLTP():
                             rsi_5Min_crossed40 = False
                             rsi_5Min_below40 = False
                             lbl_RSI_Msg.config(text="Target Hit")
-                            print("Exit @ = ", price5Min['Close'].iloc[-1])
+                            print("Exit @ = ", price5Min['Close'].iloc[-1], "Exit @ : ", price5Min.index[-1])
                             entry = 0.0
                             target = 0.0
                             stoploss = 0.0
@@ -148,7 +157,7 @@ def getLTP():
                             rsi_5Min_crossed40 = False
                             rsi_5Min_below40 = False
                             lbl_RSI_Msg.config(text="Stoploss hit")
-                            print("Stoploss Exit @ = ", price5Min['Close'].iloc[-1])
+                            print("Stoploss Exit @ = ", price5Min['Close'].iloc[-1], "Exit @ : ", price5Min.index[-1])
                             entry = 0.0
                             target = 0.0
                             stoploss = 0.0
@@ -159,7 +168,6 @@ def getLTP():
                 currentRSI15 = currentRSI15_l
                 currentRSI5 = currentRSI5_l
                 lock.release()
-
 
             except Exception as e:
                 txt_LTP.delete(0, END)
@@ -204,8 +212,6 @@ def findSetup():
 
         if stop_LTP_threads:
             break
-
-
     return
 
 def startthreading():
@@ -231,7 +237,7 @@ def startthreading():
 root = Tk()
 
 # root window title and dimension
-root.title("RSI Bounce")
+root.title("Yahoo RSI Bounce")
 
 # creating a lock
 lock = threading.Lock()
